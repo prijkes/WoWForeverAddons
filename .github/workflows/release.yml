@@ -1,0 +1,129 @@
+name: Release
+
+# Pushing a tag <Addon>-v<version> (for example ForeverAddonFixes-v1.1.0) releases that addon.
+# The tests are not run here; they run on push (tests.yml). This workflow only waits for the
+# tagged commit's test run and refuses to release unless it passed.
+on:
+  push:
+    tags: ['*-v*']
+
+permissions:
+  contents: write # create the release
+  actions: read   # read the tagged commit's test runs
+
+jobs:
+  release:
+    name: Release ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags and history, for the release notes
+
+      - name: Read the tag
+        run: |
+          tag="$GITHUB_REF_NAME"
+          addon="${tag%-v*}"
+          version="${tag##*-v}"
+          case "$addon" in
+            ForeverFlightTimer|ForeverInstanceTimer|ForeverAddonFixes) ;;
+            *) echo "::error::'$tag' doesn't name one of this repository's addons; use <Addon>-v<version>"; exit 1 ;;
+          esac
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$version' isn't a version like 1.2.3"; exit 1
+          fi
+          if [ ! -f "$addon/$addon.toc" ]; then
+            echo "::error::$addon/$addon.toc is missing"; exit 1
+          fi
+          echo "ADDON=$addon" >> "$GITHUB_ENV"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          # The tagged commit, also for annotated tags.
+          if ! commit=$(git rev-parse --verify "$tag^{commit}"); then
+            echo "::error::$tag doesn't resolve to a commit"; exit 1
+          fi
+          echo "COMMIT=$commit" >> "$GITHUB_ENV"
+
+      - name: Check the tag against the toc's version
+        run: |
+          toc_version=$(tr -d '\r' < "$ADDON/$ADDON.toc" | sed -n 's/^## Version:[[:space:]]*//p' | head -n 1 | sed 's/[[:space:]]*$//')
+          if [ "$toc_version" != "$VERSION" ]; then
+            echo "::error::the tag says $VERSION but $ADDON/$ADDON.toc says '$toc_version'"; exit 1
+          fi
+          echo "$ADDON.toc has version $VERSION"
+
+      - name: Wait for the tagged commit's tests to pass
+        run: |
+          appear_deadline=$((SECONDS + 10 * 60))
+          finish_deadline=$((SECONDS + 45 * 60))
+          while true; do
+            if [ "$SECONDS" -ge "$finish_deadline" ]; then
+              echo "::error::gave up waiting for the Tests run of $COMMIT"; exit 1
+            fi
+            if ! run=$(gh run list --workflow tests.yml --commit "$COMMIT" --event push --limit 1 \
+                --json databaseId,status,conclusion,url --jq '.[0] // empty'); then
+              echo "Couldn't list runs (GitHub API error); retrying."
+              sleep 20
+              continue
+            fi
+            if [ -z "$run" ]; then
+              if [ "$SECONDS" -ge "$appear_deadline" ]; then
+                echo "::error::no Tests run found for $COMMIT. GitHub runs Tests only for the last commit of each push (never for [skip ci] commits), so tag a commit that was the last one in a push. For any other commit, push it as the tip of a branch (git push origin $COMMIT:refs/heads/check-$COMMIT), wait for its Tests run, then re-run this workflow."
+                exit 1
+              fi
+              echo "No Tests run for $COMMIT yet; waiting."
+              sleep 20
+              continue
+            fi
+            status=$(jq -r '.status' <<<"$run")
+            conclusion=$(jq -r '.conclusion' <<<"$run")
+            url=$(jq -r '.url' <<<"$run")
+            if [ "$status" = "completed" ]; then
+              if [ "$conclusion" != "success" ]; then
+                echo "::error::the Tests run for $COMMIT concluded '$conclusion': $url. If that was a fluke, re-run it, then re-run this workflow."
+                exit 1
+              fi
+              echo "Tests passed: $url"
+              break
+            fi
+            echo "Tests run is $status; waiting: $url"
+            sleep 20
+          done
+
+      - name: Build the zip, without tests
+        run: |
+          rm -rf dist
+          mkdir -p dist/stage
+          cp -a "$ADDON" "dist/stage/$ADDON"
+          rm -rf "dist/stage/$ADDON/tests"
+          (cd dist/stage && zip -q -r -X "../$ADDON-$VERSION.zip" "$ADDON")
+          unzip -Z1 "dist/$ADDON-$VERSION.zip" > dist/listing.txt
+          if grep -q '/tests/' dist/listing.txt; then echo "::error::the zip contains tests"; exit 1; fi
+          if ! grep -qx "$ADDON/$ADDON.toc" dist/listing.txt; then echo "::error::the zip has no $ADDON/$ADDON.toc"; exit 1; fi
+          if grep -qv "^$ADDON/" dist/listing.txt; then echo "::error::the zip has entries outside $ADDON/"; exit 1; fi
+          echo "$(wc -l < dist/listing.txt) entries in $ADDON-$VERSION.zip"
+
+      - name: Write the release notes
+        run: |
+          # The nearest earlier release of this addon in the commit's history.
+          previous=$(git describe --tags --abbrev=0 --match "$ADDON-v*" "$COMMIT^" 2>/dev/null || true)
+          {
+            echo "Install: extract the zip into your WoW Forever installation's \`Interface\\AddOns\` folder, then restart the game."
+            echo
+            if [ -n "$previous" ]; then
+              echo "Changes to $ADDON since $previous:"
+              echo
+              git log --format='- %s' "$previous..$GITHUB_REF_NAME" -- "$ADDON/"
+            else
+              echo "First release."
+            fi
+          } > dist/notes.md
+          cat dist/notes.md
+
+      - name: Publish the release
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/$ADDON-$VERSION.zip" \
+            --title "$ADDON $VERSION" --notes-file dist/notes.md --verify-tag

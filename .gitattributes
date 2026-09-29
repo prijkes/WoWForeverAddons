@@ -1,0 +1,8 @@
+# Store every file byte-for-byte, with no line-ending conversion. Most files are LF; a few are CRLF.
+* -text
+
+# Keep the tests out of GitHub's "Source code" archives (on releases and on Download ZIP).
+# Clones and forks still have them.
+/ForeverFlightTimer/tests export-ignore
+/ForeverInstanceTimer/tests export-ignore
+/ForeverAddonFixes/tests export-ignore

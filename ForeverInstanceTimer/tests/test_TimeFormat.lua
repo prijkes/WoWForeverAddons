@@ -1,0 +1,47 @@
+local T = ...
+local ns = require("loader").load({}, "TimeFormat.lua")
+local F = ns.TimeFormat.Format
+
+T.test("auto style under an hour", function()
+    T.eq(F(0, "auto"), "0:00")
+    T.eq(F(5, "auto"), "0:05")
+    T.eq(F(65, "auto"), "1:05")
+    T.eq(F(3599, "auto"), "59:59")
+end)
+
+T.test("auto style switches to hours at 3600", function()
+    T.eq(F(3600, "auto"), "1:00:00")
+    T.eq(F(3765, "auto"), "1:02:45")
+    T.eq(F(360000, "auto"), "100:00:00")
+end)
+
+T.test("hours and padded styles", function()
+    T.eq(F(245, "hours"), "0:04:05")
+    T.eq(F(3765, "hours"), "1:02:45")
+    T.eq(F(245, "padded"), "00:04:05")
+    T.eq(F(36000, "padded"), "10:00:00")
+end)
+
+T.test("words style", function()
+    T.eq(F(0, "words"), "0s")
+    T.eq(F(45, "words"), "45s")
+    T.eq(F(245, "words"), "4m 05s")
+    T.eq(F(3600, "words"), "1h 00m 00s")
+    T.eq(F(3765, "words"), "1h 02m 45s")
+end)
+
+T.test("tenths are floored, not rounded", function()
+    T.eq(F(12.7, "auto", true), "0:12.7")
+    T.eq(F(59.99, "auto", true), "0:59.9")
+    T.eq(F(3765.25, "hours", true), "1:02:45.2")
+    T.eq(F(245.5, "words", true), "4m 05.5s")
+    T.eq(F(0, "padded", true), "00:00:00.0")
+end)
+
+T.test("bad input is zero; unknown style is auto", function()
+    T.eq(F(-5, "auto"), "0:00")
+    T.eq(F(nil, "auto"), "0:00")
+    T.eq(F(0 / 0, "auto"), "0:00")
+    T.eq(F(65, "bogus"), "1:05")
+    T.eq(F(65), "1:05")
+end)

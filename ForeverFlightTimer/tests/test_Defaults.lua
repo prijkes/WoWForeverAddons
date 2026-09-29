@@ -1,0 +1,32 @@
+local T = ...
+local ns = require("loader").load({}, "Defaults.lua")
+local p, g = ns.DEFAULTS.profile, ns.DEFAULTS.global
+
+T.test("display defaults are the chosen values", function()
+    T.eq(p.showTimer, true); T.eq(p.locked, true)
+    T.eq(p.rightClickMenu, true)
+    T.eq(p.pos.x, 0); T.eq(p.pos.y, -120)
+    T.eq(p.width, 240); T.eq(p.height, 20)
+    T.eq(p.scale, 1); T.eq(p.alpha, 1); T.eq(p.strata, "MEDIUM")
+    T.eq(p.freezeSeconds, 0)
+end)
+
+T.test("appearance defaults are the chosen values", function()
+    T.eq(p.showBar, true); T.eq(p.barTexture, "Blizzard"); T.eq(p.barFill, "drain")
+    T.eq(p.colors.countdown.b, 1); T.eq(p.colors.countdown.r, 0.2)
+    T.eq(p.colors.learning.r, 0.55); T.eq(p.colors.overtime.g, 0.45); T.eq(p.colors.barBg.a, 0.5)
+    T.eq(p.showDest, true); T.eq(p.showOrigin, false); T.eq(p.fullNames, false)
+    T.eq(p.showTime, true); T.eq(p.countUp, false)
+    T.eq(p.timeStyle, "auto"); T.eq(p.showTenths, false)
+    T.eq(p.showArrival, true); T.eq(p.arrivalPos, "after")
+    T.eq(p.clockSource, "game"); T.eq(p.clockFormat, "game")
+    T.eq(p.font.face, "Friz Quadrata TT"); T.eq(p.font.size, 12); T.eq(p.font.outline, "OUTLINE")
+    T.eq(p.font.mono, false); T.eq(p.font.shadow, false)
+    T.eq(p.colors.arrival.r, 0.8)
+    T.eq(p.bg.show, false); T.eq(p.border.show, false); T.eq(p.padding, 0)
+end)
+
+T.test("behaviour defaults and global data", function()
+    T.eq(p.tooltips, true); T.eq(p.chat, true)
+    T.eq(g.debug, false); T.eq(type(g.routes), "table")
+end)

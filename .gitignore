@@ -1,0 +1,4 @@
+# The game's AddOns folder for tools/sync-to-game.ps1; set on each PC.
+tools/sync-to-game.local
+# Release build output.
+dist/

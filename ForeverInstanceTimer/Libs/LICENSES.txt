@@ -1,0 +1,26 @@
+Bundled libraries and their licenses
+====================================
+
+The libraries in this Libs folder are not covered by the addon's MIT license
+(../LICENSE.txt). Each keeps its own license:
+
+  AceConfig-3.0, AceDB-3.0, AceDBOptions-3.0, AceGUI-3.0, CallbackHandler-1.0
+      Ace3 Release-r1403 (https://github.com/WoWUIDev/Ace3)
+      BSD-style license, Copyright (c) 2007, Ace3 Development Team
+      -> LICENSE-Ace3.txt
+
+  LibStub
+      Placed in the public domain by its authors (see LibStub/LibStub.lua).
+
+  LibSharedMedia-3.0  (v12.1.0, 12000002)
+      repos.wowace.com/wow/libsharedmedia-3-0
+      GNU Lesser General Public License v2.1, as stated in
+      LibSharedMedia-3.0/LibSharedMedia-3.0.lua
+      -> LibSharedMedia-3.0/LICENSE.txt
+
+  AceGUI-3.0-SharedMediaWidgets  (trunk r65, data 9004)
+      repos.wowace.com/wow/ace-gui-3-0-shared-media-widgets
+      BSD 3-Clause license, Copyright (c) 2010, Yssaril
+      -> AceGUI-3.0-SharedMediaWidgets/LICENSE.txt
+
+The libraries are included unmodified.

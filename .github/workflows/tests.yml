@@ -1,0 +1,64 @@
+name: Tests
+
+# Runs on every pushed commit (branch pushes only; tags and pull requests don't run it).
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Unit, smoke and lint tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false # the tests run third-party Lua; they need no token
+
+      - name: Install LuaJIT
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y luajit
+          luajit -v
+
+      - name: Download the pinned addons Forever Addon Fixes' smoke tests run against
+        run: bash tools/ci/fetch-test-deps.sh "$RUNNER_TEMP/deps"
+
+      - name: ForeverFlightTimer
+        working-directory: ForeverFlightTimer
+        run: |
+          luajit tests/run.lua
+          luajit tests/smoke.lua
+          FFT_SMOKE_FLIGHTMAP_PRELOADED=1 luajit tests/smoke.lua
+          FFT_SMOKE_BREAK_SETTINGS=1 luajit tests/smoke.lua
+          luajit tests/lint51.lua $(find . -name "*.lua" | sort)
+
+      - name: ForeverInstanceTimer
+        working-directory: ForeverInstanceTimer
+        run: |
+          luajit tests/run.lua
+          luajit tests/smoke.lua
+          FIT_SMOKE_BREAK_SETTINGS=1 luajit tests/smoke.lua
+          luajit tests/lint51.lua $(find . -name "*.lua" | sort)
+
+      - name: ForeverAddonFixes
+        working-directory: ForeverAddonFixes
+        env:
+          DEPS: ${{ runner.temp }}/deps
+        run: |
+          luajit tests/run.lua
+          luajit tests/lint51.lua $(find . -name "*.lua" | sort)
+          # A smoke test prints "SKIP:" and exits 0 when its target addon is missing; here that's a failure.
+          smoke() {
+            local out
+            out=$(env "$@" 2>&1) || { echo "$out"; return 1; }
+            echo "$out"
+            if grep -q '^SKIP:' <<<"$out"; then echo "::error::smoke test skipped: $*"; return 1; fi
+          }
+          smoke AFIX_GQ_PATH="$DEPS/GearQuestForever-0.2.11-beta/GearQuestForever" luajit tests/smoke.lua
+          smoke AFIX_GQ_PATH="$DEPS/GearQuestForever-0.2.6-beta/GearQuestForever" luajit tests/smoke.lua
+          smoke AFIX_AL_PATH="$DEPS/AtlasLootClassic-1.1.1/AtlasLootClassic" luajit tests/smoke_atlasloot.lua
+          smoke AFIX_AL_PATH="$DEPS/AtlasLootClassic-1.0.7/AtlasLootClassic" luajit tests/smoke_atlasloot.lua
