@@ -47,7 +47,14 @@ To run the tests locally, with LuaJIT on the PATH, from an addon's folder:
 - `luajit tests/lint51.lua $(find . -name "*.lua" | sort)`
 
 ## Copying the addons into the game
-`tools/sync-to-game.ps1` replaces the game's copy of an addon with this repository's folder, without its `tests` folder.
+`tools/sync-to-game.ps1` updates the game's copy of an addon in place to match this repository's folder, without its `tests` folder. It copies changed files and removes files the repository no longer has.
+
+For safety it refuses in three cases:
+- a game copy that is, or contains, a junction, a symbolic link or a `.git` folder;
+- an AddOns folder inside this repository;
+- this repository inside a game copy.
+
+Keep the repository outside the game's folder.
 1. Once per PC: `tools\sync-to-game.ps1 -SetAddOnsPath "<WoW folder>\_classic_beta_\Interface\AddOns"`. The path is saved in the git-ignored `tools\sync-to-game.local`.
 2. Then `tools\sync-to-game.ps1 -All`, or `tools\sync-to-game.ps1 -Addon ForeverAddonFixes`.
 3. Restart the game, or `/reload` if no files were added or removed.
