@@ -76,37 +76,3 @@ When an addon updates, its author may have fixed the bug. The check only means s
 4. Type `/afix debug off`.
 
 If both fixes turn out to be unneeded, you can remove this addon.
-
-## In-game test checklist
-1. **Status.** After starting the game, `/afix status` shows:
-   - `1. GearQuest: skip hidden chat text: active (GearQuestForever 0.2.11-beta), skipped 0 this session`, with no "untested" flag;
-   - `2. AtlasLoot: skip scans of hidden vendors: active (AtlasLootClassic Forever 1.60.1; its releases share one version string), skipped 0 this session`.
-2. **Opening the panel.** `/afix` opens it. Try it in combat too: it refuses with a message instead.
-3. **The panel.** Options → AddOns shows **Forever Addon Fixes** with four checkboxes. Unticking and re-ticking a fix changes `/afix status` to "off" and back to "active".
-4. **GearQuest in a dungeon.** Type `/afix debug on`. On a weapon or defense skill-up there is no GearQuest error. A line "GearQuest skipped a hidden chat message (1 this session)" appears, which also shows that chat lines print during lockdown. `/afix status` then counts the skip.
-5. **GearQuest outside a dungeon.** With debug still on, loot an item: no "skipped" line appears. GearQuest still shows the loot, for example in its log or tracker when the item belongs to a hunt.
-6. **GearQuest off and on.** `/afix off 1` in a dungeon: the next skill-up brings the GearQuest error back, which shows the fix is what stops it. `/afix on 1` fixes it again.
-7. **AtlasLoot.** Target a vendor and check `/dump C_Secrets.ShouldUnitIdentityBeSecret("target")`:
-   - **For a hidden vendor (`true`):** opening it with debug on shows "AtlasLoot skipped a vendor scan" and no AtlasLoot error.
-   - **For a normal vendor (`false`):** nothing changes, and no skip line appears.
-8. **AtlasLoot's unit tooltips.** `/dump GameTooltip:HasScript("OnTooltipSetUnit")` should print `false`. If it prints `true`, AtlasLoot's unit-tooltip code may also need a fix, so please report it.
-9. **Afterwards.** Type `/afix debug off`.
-
-## Development
-The tests are in the GitHub repository (github.com/prijkes/WoWForeverAddons), not in release zips.
-
-Offline tests, run from this folder:
-- `luajit tests/run.lua`: unit tests.
-- `luajit tests/smoke.lua`: runs against GearQuest's **real** `Core.lua` and `Log.lua`, from `../GearQuestForever` by default. It checks four things:
-  - the error is reproduced without the fix;
-  - the fix stops it;
-  - readable messages change GearQuest's data exactly as without the fix;
-  - load order, the panel, broken-panel fallbacks and untested versions all behave as specified.
-- `luajit tests/smoke_atlasloot.lua`: runs against AtlasLoot's **real** `Data/VendorPrice.lua`, from `../AtlasLootClassic` by default. It checks five things:
-  - the error is reproduced at line 988 without the fix;
-  - the fix stops it;
-  - readable vendors record exactly the same prices;
-  - a skip doesn't stop a later readable visit from recording;
-  - off/on, no target, and load order all behave as specified.
-- `AFIX_GQ_PATH="<GearQuestForever folder>"` or `AFIX_AL_PATH="<AtlasLootClassic folder>"` runs the matching smoke test against another copy. The defaults only exist when this folder sits in the game's AddOns folder next to those addons. In a checkout of the repository, set both variables, or the smoke tests print `SKIP:` and do nothing.
-- `luajit tests/lint51.lua $(find . -name "*.lua" | sort)`: checks for Lua 5.1 syntax and removed globals.
