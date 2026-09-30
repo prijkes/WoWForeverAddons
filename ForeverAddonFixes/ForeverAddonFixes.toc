@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Forever Addon Fixes
 ## Notes: Fixes Lua errors that other addons throw on WoW Forever, without editing their files. Type /afix for options.
-## Version: 1.0.0
+## Version: 1.0.1
 ## IconTexture: Interface\Icons\INV_Misc_Wrench_01
 ## SavedVariables: ForeverAddonFixesDB
 ## OptionalDeps: GearQuestForever, AtlasLootClassic

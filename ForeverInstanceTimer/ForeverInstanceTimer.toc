@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Forever Instance Timer
 ## Notes: Times your dungeon, raid and battleground runs, and keeps counting through corpse runs. Type /itimer for options.
-## Version: 1.0.0
+## Version: 1.0.1
 ## IconTexture: Interface\Icons\INV_Misc_PocketWatch_01
 ## SavedVariables: ForeverInstanceTimerDB
 ## SavedVariablesPerCharacter: ForeverInstanceTimerCharDB

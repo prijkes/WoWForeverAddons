@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Forever Flight Timer
 ## Notes: Learns your flight-path times and counts down to landing, with arrival time and flight-map tooltips. Type /ftimer for options.
-## Version: 1.0.0
+## Version: 1.0.1
 ## IconTexture: Interface\Minimap\Tracking\FlightMaster
 ## SavedVariables: ForeverFlightTimerDB
 ## SavedVariablesPerCharacter: ForeverFlightTimerCharDB
